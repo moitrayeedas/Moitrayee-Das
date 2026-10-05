@@ -3,14 +3,14 @@ interface HomePanelProps {
 }
 
 import { BriefcaseBusiness, Landmark } from "lucide-react";
+import RecentMedia from "../ui/RecentMedia";
 
 export default function HomePanel({ onNavigate }: HomePanelProps) {  return (
-    <div className="min-h-full bg-white text-slate-900">
-      
+<div className="h-screen w-full overflow-y-auto overflow-x-hidden bg-white text-slate-900 snap-y snap-mandatory scroll-smooth">      
             {/* =========================================================
           HERO
       ========================================================= */}
-      <section className="px-6 pb-20 pt-28 md:px-10 lg:px-12 xl:px-16">
+      <section className="snap-start snap-always px-6 pb-20 pt-28 md:px-10 lg:px-12 xl:px-16">
         <div className="mx-auto w-full max-w-[1280px]">
           <div className="grid items-stretch gap-8 lg:grid-cols-[0.82fr_1.5fr_0.82fr] xl:gap-10">
 
@@ -227,11 +227,23 @@ export default function HomePanel({ onNavigate }: HomePanelProps) {  return (
         </div>
       </section>
 
+
+{/* =========================================================
+          RECENT MEDIA
+      ========================================================= */}
+      <section className="snap-start snap-always scroll-mt-15">
+        <RecentMedia />
+      </section>
+
            {/* =========================================================
           HOME FOOTER
       ========================================================= */}
-      <footer id="home-footer" className="bg-slate-950 px-6 pt-12 pb-6 text-white md:px-10 lg:px-16">
-  <div className="mx-auto max-w-7xl">
+<footer
+        id="home-footer"
+        className="snap-end bg-slate-950 px-6 pt-12 pb-6 text-white md:px-10 lg:px-16"
+      >
+        
+          <div className="mx-auto max-w-7xl">
     <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr_0.8fr]">
       {/* Identity */}
       <div>

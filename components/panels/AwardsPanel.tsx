@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 
 const awards = [
+  
+  {
+    title: "Service Award",
+    description:
+      'FLAME University, Pune (2025-2026).',
+  },
   {
     title: "Best Paper Award",
     description:

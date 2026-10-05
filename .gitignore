@@ -1,0 +1,9 @@
+# Ignore large video files
+public/videos/
+
+# Ignore build and dependency folders
+node_modules/
+dist/
+build/
+.next/
+.env*
