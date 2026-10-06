@@ -1,7 +1,7 @@
 "use client";
 
 import { Manrope } from "next/font/google";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -11,41 +11,87 @@ const manrope = Manrope({
 
 
 
+type VideoSource =
+  | { type: "youtube"; url: string }
+  | { type: "facebook"; url: string }
+  | { type: "mp4"; src: string };
+
 interface VideoItem {
-  src: string;
+  source: VideoSource;
   orientation: "horizontal" | "vertical";
   link?: string;
-  banner?: string; // Optional banner image path
+  banner?: string;
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, "");
+    let videoId: string | null = null;
+
+    if (hostname === "youtu.be") {
+      videoId = parsedUrl.pathname.split("/").filter(Boolean)[0] ?? null;
+    } else if (hostname === "youtube.com" || hostname === "m.youtube.com") {
+      const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+      if (parsedUrl.pathname === "/watch") {
+        videoId = parsedUrl.searchParams.get("v");
+      } else if (["shorts", "embed", "live"].includes(pathParts[0] ?? "")) {
+        videoId = pathParts[1] ?? null;
+      }
+    }
+
+    if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&playsinline=1`;
+  } catch {
+    return null;
+  }
+}
+
+function getFacebookEmbedUrl(url: string): string | null {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, "");
+    if (hostname !== "facebook.com" && hostname !== "m.facebook.com") return null;
+
+    const embedUrl = new URL("https://www.facebook.com/plugins/video.php");
+    embedUrl.searchParams.set("href", url);
+    embedUrl.searchParams.set("show_text", "false");
+    embedUrl.searchParams.set("autoplay", "true");
+    return embedUrl.toString();
+  } catch {
+    return null;
+  }
 }
 
 const videos: VideoItem[] = [
   {
-    src: "/videos/Vid (1).mp4",
+    source: { type: "youtube", url: "https://youtu.be/0eEpXxyLK1Y?si=8ACdQ9KCYM4_wxFy" },
     orientation: "horizontal",
     link: "https://youtu.be/0eEpXxyLK1Y?si=8ACdQ9KCYM4_wxFy",
-    banner: "/images/recent-media/I(1).avif", // Add banner image here
+    banner: "/images/recent-media/I(1).avif",
   },
   {
-    src: "/videos/Vid (2).mp4",
+    source: {
+      type: "facebook",
+      url: "https://www.facebook.com/FlameUniversity/videos/prof-moitrayee-das-faculty-of-psychology-highlights-the-evolving-mental-health-l/930506519163873/",
+    },
     orientation: "vertical",
     link: "https://www.facebook.com/FlameUniversity/videos/prof-moitrayee-das-faculty-of-psychology-highlights-the-evolving-mental-health-l/930506519163873/",
-    banner: "/images/recent-media/I(2).jpg", // Add banner image here
+    banner: "/images/recent-media/I(2).jpg",
   },
   {
-    src: "/videos/Vid (3).mp4",
+    source: { type: "mp4", src: "/videos/Vid (3).mp4" },
     orientation: "vertical",
     link: "https://open.spotify.com/episode/5gGm2vOeLU7ry7n1zgKMx7?si=BbwKm9pbRtKaMhABbjbShA",
-    
   },
   {
-    src: "/videos/Vid (4).mp4",
+    source: { type: "mp4", src: "/videos/Vid (4).mp4" },
     orientation: "horizontal",
     link: "https://www.instagram.com/reel/DcNdd4QJy56/",
-        banner: "/images/recent-media/I(4).png", // Add banner image here
-
+    banner: "/images/recent-media/I(4).png",
   },
   {
-    src: "/videos/Vid (5).mp4",
+    source: { type: "mp4", src: "/videos/Vid (5).mp4" },
     orientation: "vertical",
     link: "https://www.instagram.com/reel/DcygLe7pj_j/",
   },
@@ -65,6 +111,12 @@ export default function RecentMedia() {
   const startScrollLeft = useRef(0);
 
   const activeIndex = lockedIndex ?? hoveredIndex;
+  const selectedVideo = lockedIndex === null ? null : videos[lockedIndex];
+  const selectedEmbedUrl = selectedVideo?.source.type === "youtube"
+    ? getYouTubeEmbedUrl(selectedVideo.source.url)
+    : selectedVideo?.source.type === "facebook"
+      ? getFacebookEmbedUrl(selectedVideo.source.url)
+      : null;
 
   // --- Smooth infinite autoscroll with native scroll support ---
   useEffect(() => {
@@ -150,7 +202,7 @@ export default function RecentMedia() {
 
             return (
               <button
-  key={`${video.src}-${index}`}
+  key={`${video.source.type === "mp4" ? video.source.src : video.source.url}-${index}`}
   type="button"
   onMouseEnter={() => {
     if (lockedIndex === null) setHoveredIndex(originalIndex);
@@ -175,21 +227,23 @@ export default function RecentMedia() {
   aria-label={`Play media ${originalIndex + 1}`}
 >
   {/* Plain video — completely clean, no overlay */}
-  <video
-    src={video.src}
-    muted
-    loop
-    playsInline
-    autoPlay={isActive}
-    className="pointer-events-none h-full w-full object-cover"
-  />
+  {video.source.type === "mp4" && (
+    <video
+      src={video.source.src}
+      muted
+      loop
+      playsInline
+      autoPlay={isActive}
+      className="pointer-events-none h-full w-full object-cover"
+    />
+  )}
 {/* Optional Banner Overlay: Fades out on hover to reveal video */}
 {video.banner && (
   <img
     src={video.banner}
     alt="Video preview banner"
     className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-      isActive ? "opacity-0" : "opacity-100"
+      video.source.type !== "mp4" || !isActive ? "opacity-100" : "opacity-0"
     }`}
   />
 )}
@@ -245,21 +299,32 @@ export default function RecentMedia() {
         >
           <div
             className={`relative max-h-[85vh] overflow-hidden rounded-2xl bg-black shadow-[0_30px_100px_rgba(0,0,0,0.5)] ${
-              videos[lockedIndex].orientation === "horizontal"
+              selectedVideo?.orientation === "horizontal"
                 ? "w-full max-w-[900px]"
-                : "h-[80vh] w-auto max-w-[90vw]"
+                : "aspect-[9/16] h-[80vh] max-w-[90vw]"
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <video
-              src={videos[lockedIndex].src}
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls
-              className="h-full w-full object-contain"
-            />
+            {selectedEmbedUrl ? (
+              <iframe
+                src={selectedEmbedUrl}
+                title={`${selectedVideo?.source.type === "youtube" ? "YouTube" : "Facebook"} recent media video`}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            ) : selectedVideo?.source.type === "mp4" ? (
+              <video
+                src={selectedVideo.source.src}
+                autoPlay
+                loop
+                playsInline
+                controls
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <p className="p-6 text-white">This video link could not be embedded.</p>
+            )}
 
             <button
               type="button"
