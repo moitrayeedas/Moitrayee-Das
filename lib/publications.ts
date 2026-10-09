@@ -1800,6 +1800,6 @@ publications: [
         url: "https://www.youthkiawaaz.com/2019/01/karan-johar-and-his-misogynistic-guests-sexism-with-karan/",
         linkLabel: "Read article",
       },
-    ],
+    ], // EASTER EGG 1  
   },
 ];
